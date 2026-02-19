@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex Golf</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0f1117; color: #e0e0e0; min-height: 100vh; padding: 24px; }
+  h1 { text-align: center; font-size: 2rem; color: #f0c040; letter-spacing: 2px; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 32px; font-size: 0.85rem; }
+  .progress { text-align: center; margin-bottom: 24px; color: #aaa; font-size: 0.9rem; }
+  .card { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 10px; padding: 24px; max-width: 720px; margin: 0 auto 24px; }
+  .challenge-title { font-size: 1.1rem; color: #f0c040; margin-bottom: 16px; }
+  .lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .list-box { border-radius: 8px; padding: 12px; }
+  .list-box.match { background: #0d2318; border: 1px solid #1a5c32; }
+  .list-box.no-match { background: #1f0d0d; border: 1px solid #5c1a1a; }
+  .list-label { font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; }
+  .list-box.match .list-label { color: #4caf50; }
+  .list-box.no-match .list-label { color: #f44336; }
+  .string-item { font-size: 0.9rem; padding: 3px 6px; border-radius: 4px; margin-bottom: 3px; transition: background 0.2s; }
+  .string-item.ok { background: #1a4a2a; color: #81c784; }
+  .string-item.fail { background: #4a1a1a; color: #e57373; }
+  .string-item.neutral { color: #ccc; }
+  .input-row { display: flex; gap: 10px; align-items: center; }
+  input[type="text"] { flex: 1; background: #0f1117; border: 2px solid #2a2d3a; border-radius: 6px; padding: 10px 14px; color: #e0e0e0; font-family: 'Courier New', monospace; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+  input[type="text"]:focus { border-color: #f0c040; }
+  input[type="text"].valid { border-color: #4caf50; }
+  input[type="text"].invalid { border-color: #f44336; }
+  .length-badge { background: #2a2d3a; border-radius: 6px; padding: 8px 14px; font-size: 0.9rem; color: #aaa; white-space: nowrap; }
+  .length-badge span { color: #f0c040; font-weight: bold; }
+  .status-msg { margin-top: 12px; font-size: 0.85rem; min-height: 1.2em; }
+  .status-msg.success { color: #4caf50; }
+  .status-msg.error { color: #f44336; }
+  .status-msg.partial { color: #ff9800; }
+  .nav { display: flex; justify-content: space-between; align-items: center; max-width: 720px; margin: 0 auto; }
+  button { background: #f0c040; color: #0f1117; border: none; border-radius: 6px; padding: 10px 22px; font-family: 'Courier New', monospace; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+  button:hover { background: #ffd060; }
+  button:disabled { background: #2a2d3a; color: #555; cursor: not-allowed; }
+  .solved-badge { color: #4caf50; font-size: 0.85rem; }
+  .scoreboard { max-width: 720px; margin: 0 auto; background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 10px; padding: 20px; }
+  .scoreboard h2 { color: #f0c040; margin-bottom: 16px; text-align: center; }
+  .score-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.9rem; }
+  .score-row:last-child { border-bottom: none; }
+  .score-total { color: #f0c040; font-weight: bold; font-size: 1rem; margin-top: 12px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>⛳ REGEX GOLF</h1>
+<p class="subtitle">Write the shortest regex that matches all ✓ strings and none of the ✗ strings.</p>
+
+<div class="progress" id="progress"></div>
+<div id="app"></div>
+
+<script>
+const challenges = [
+  {
+    title: "1. Fruits",
+    match:   ["apple","apricot","avocado"],
+    nomatch: ["banana","blueberry","cherry","date","elderberry"]
+  },
+  {
+    title: "2. Even numbers",
+    match:   ["2","4","6","8","10","22","100"],
+    nomatch: ["1","3","5","7","9","11","101"]
+  },
+  {
+    title: "3. Ends with 'ing'",
+    match:   ["running","jumping","flying","coding","sleeping"],
+    nomatch: ["runner","jumper","flyer","coder","sleeper","ring","sing"]
+  },
+  {
+    title: "4. Contains double letters",
+    match:   ["apple","balloon","coffee","feet","happy","letter"],
+    nomatch: ["cat","dog","bike","jump","clean","trust"]
+  },
+  {
+    title: "5. Four-letter words",
+    match:   ["cats","dogs","bird","fish","frog","wolf"],
+    nomatch: ["cat","elephant","ox","tiger","rat","al"]
+  },
+  {
+    title: "6. Starts with capital",
+    match:   ["Alice","Bob","Charlie","London","Tokyo"],
+    nomatch: ["alice","bob","charlie","london","tokyo"]
+  },
+  {
+    title: "7. Valid hex colours",
+    match:   ["#fff","#000","#a1b2c3","#FFF","#ABC123"],
+    nomatch: ["fff","#gg0000","#12345","#1234567","red","#xyz"]
+  },
+  {
+    title: "8. The word 'cat' (whole word)",
+    match:   ["cat","a cat","the cat sat","cat!","cat."],
+    nomatch: ["cats","catfish","tomcat","scatter","catch","concatenate"]
+  },
+  {
+    title: "9. Numbers with exactly 3 digits",
+    match:   ["100","999","123","007","042"],
+    nomatch: ["1","12","1000","99","1234","12345"]
+  },
+  {
+    title: "10. Email addresses (simple)",
+    match:   ["a@b.com","user@example.org","x@y.co"],
+    nomatch: ["notanemail","@missing.com","noatsign.com","user@","@.com","user @x.com"]
+  }
+];
+
+const state = {
+  current: 0,
+  inputs: Array(challenges.length).fill(''),
+  solved: Array(challenges.length).fill(false),
+  bestLengths: Array(challenges.length).fill(null)
+};
+
+function testRegex(pattern, match, nomatch) {
+  if (!pattern) return { valid: false, matchResults: match.map(() => null), nomatchResults: nomatch.map(() => null), msg: '', msgClass: '' };
+  let re;
+  try { re = new RegExp(pattern); } catch(e) {
+    return { valid: false, matchResults: match.map(() => false), nomatchResults: nomatch.map(() => false), msg: '⚠ Invalid regex: ' + e.message, msgClass: 'error' };
+  }
+  const matchResults = match.map(s => re.test(s));
+  const nomatchResults = nomatch.map(s => !re.test(s));
+  const allGood = matchResults.every(Boolean) && nomatchResults.every(Boolean);
+  const anyGood = matchResults.some(Boolean) || nomatchResults.some(Boolean);
+  let msg = '', msgClass = '';
+  if (allGood) { msg = '✓ Solved! Length: ' + pattern.length; msgClass = 'success'; }
+  else if (anyGood) { msg = '✗ Not quite — some strings are mismatched.'; msgClass = 'partial'; }
+  else { msg = '✗ No matches yet.'; msgClass = 'partial'; }
+  return { valid: allGood, matchResults, nomatchResults, msg, msgClass };
+}
+
+function render() {
+  const c = challenges[state.current];
+  const input = state.inputs[state.current];
+  const result = testRegex(input, c.match, c.nomatch);
+  const solved = state.solved;
+  const solvedCount = solved.filter(Boolean).length;
+
+  let html = `<div class="progress">Challenge ${state.current + 1} of ${challenges.length} &nbsp;|&nbsp; Solved: ${solvedCount}/${challenges.length}</div>`;
+  html += `<div class="card">`;
+  html += `<div class="challenge-title">${c.title} ${state.solved[state.current] ? '<span class="solved-badge">✓ SOLVED (' + state.bestLengths[state.current] + ' chars)</span>' : ''}</div>`;
+  html += `<div class="lists">`;
+
+  html += `<div class="list-box match"><div class="list-label">✓ MUST MATCH</div>`;
+  c.match.forEach((s, i) => {
+    const cls = result.matchResults[i] === null ? 'neutral' : result.matchResults[i] ? 'ok' : 'fail';
+    html += `<div class="string-item ${cls}">${escHtml(s)}</div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="list-box no-match"><div class="list-label">✗ MUST NOT MATCH</div>`;
+  c.nomatch.forEach((s, i) => {
+    const cls = result.nomatchResults[i] === null ? 'neutral' : result.nomatchResults[i] ? 'ok' : 'fail';
+    html += `<div class="string-item ${cls}">${escHtml(s)}</div>`;
+  });
+  html += `</div></div>`;
+
+  const inputClass = !input ? '' : result.valid ? 'valid' : 'invalid';
+  html += `<div class="input-row">
+    <input type="text" id="regex-input" value="${escAttr(input)}" placeholder="Enter your regex…" class="${inputClass}" autocomplete="off" spellcheck="false">
+    <div class="length-badge">Length: <span>${input.length}</span></div>
+  </div>`;
+  html += `<div class="status-msg ${result.msgClass}">${result.msg}</div>`;
+  html += `</div>`;
+
+  html += `<div class="nav">
+    <button id="btn-prev" ${state.current === 0 ? 'disabled' : ''}>← Prev</button>
+    <button id="btn-next" ${state.current === challenges.length - 1 ? 'disabled' : ''}>Next →</button>
+  </div>`;
+
+  if (solvedCount === challenges.length) {
+    const total = state.bestLengths.reduce((a,b) => a + (b||0), 0);
+    html += `<div class="scoreboard" style="margin-top:24px">
+      <h2>🏆 All Challenges Complete!</h2>`;
+    challenges.forEach((ch, i) => {
+      html += `<div class="score-row"><span>${ch.title}</span><span>${state.bestLengths[i]} chars</span></div>`;
+    });
+    html += `<div class="score-total">Total score: ${total} characters</div></div>`;
+  }
+
+  document.getElementById('app').innerHTML = html;
+
+  const inp = document.getElementById('regex-input');
+  inp.focus();
+  inp.setSelectionRange(inp.value.length, inp.value.length);
+  inp.addEventListener('input', e => {
+    state.inputs[state.current] = e.target.value;
+    const r = testRegex(e.target.value, c.match, c.nomatch);
+    if (r.valid) {
+      const len = e.target.value.length;
+      if (!state.solved[state.current] || len < state.bestLengths[state.current]) {
+        state.solved[state.current] = true;
+        state.bestLengths[state.current] = len;
+      }
+    }
+    render();
+  });
+  document.getElementById('btn-prev').addEventListener('click', () => { state.current--; render(); });
+  document.getElementById('btn-next').addEventListener('click', () => { state.current++; render(); });
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+render();
+</script>
+
+</body>
+</html>
