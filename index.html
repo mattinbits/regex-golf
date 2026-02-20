@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -57,56 +56,16 @@
 
 <script>
 const challenges = [
-  {
-    title: "1. Fruits",
-    match:   ["apple","apricot","avocado"],
-    nomatch: ["banana","blueberry","cherry","date","elderberry"]
-  },
-  {
-    title: "2. Even numbers",
-    match:   ["2","4","6","8","10","22","100"],
-    nomatch: ["1","3","5","7","9","11","101"]
-  },
-  {
-    title: "3. Ends with 'ing'",
-    match:   ["running","jumping","flying","coding","sleeping"],
-    nomatch: ["runner","jumper","flyer","coder","sleeper","ring","sing"]
-  },
-  {
-    title: "4. Contains double letters",
-    match:   ["apple","balloon","coffee","feet","happy","letter"],
-    nomatch: ["cat","dog","bike","jump","clean","trust"]
-  },
-  {
-    title: "5. Four-letter words",
-    match:   ["cats","dogs","bird","fish","frog","wolf"],
-    nomatch: ["cat","elephant","ox","tiger","rat","al"]
-  },
-  {
-    title: "6. Starts with capital",
-    match:   ["Alice","Bob","Charlie","London","Tokyo"],
-    nomatch: ["alice","bob","charlie","london","tokyo"]
-  },
-  {
-    title: "7. Valid hex colours",
-    match:   ["#fff","#000","#a1b2c3","#FFF","#ABC123"],
-    nomatch: ["fff","#gg0000","#12345","#1234567","red","#xyz"]
-  },
-  {
-    title: "8. The word 'cat' (whole word)",
-    match:   ["cat","a cat","the cat sat","cat!","cat."],
-    nomatch: ["cats","catfish","tomcat","scatter","catch","concatenate"]
-  },
-  {
-    title: "9. Numbers with exactly 3 digits",
-    match:   ["100","999","123","007","042"],
-    nomatch: ["1","12","1000","99","1234","12345"]
-  },
-  {
-    title: "10. Email addresses (simple)",
-    match:   ["a@b.com","user@example.org","x@y.co"],
-    nomatch: ["notanemail","@missing.com","noatsign.com","user@","@.com","user @x.com"]
-  }
+  { title: "1. Fruits", match: ["apple","apricot","avocado"], nomatch: ["banana","blueberry","cherry","date","elderberry"] },
+  { title: "2. Even numbers", match: ["2","4","6","8","10","22","100"], nomatch: ["1","3","5","7","9","11","101"] },
+  { title: "3. Ends with 'ing'", match: ["running","jumping","flying","coding","sleeping"], nomatch: ["runner","jumper","flyer","coder","sleeper","ring","sing"] },
+  { title: "4. Contains double letters", match: ["apple","balloon","coffee","feet","happy","letter"], nomatch: ["cat","dog","bike","jump","clean","trust"] },
+  { title: "5. Four-letter words", match: ["cats","dogs","bird","fish","frog","wolf"], nomatch: ["cat","elephant","ox","tiger","rat","al"] },
+  { title: "6. Starts with capital", match: ["Alice","Bob","Charlie","London","Tokyo"], nomatch: ["alice","bob","charlie","london","tokyo"] },
+  { title: "7. Valid hex colours", match: ["#fff","#000","#a1b2c3","#FFF","#ABC123"], nomatch: ["fff","#gg0000","#12345","#1234567","red","#xyz"] },
+  { title: "8. The word 'cat' (whole word)", match: ["cat","a cat","the cat sat","cat!","cat."], nomatch: ["cats","catfish","tomcat","scatter","catch","concatenate"] },
+  { title: "9. Numbers with exactly 3 digits", match: ["100","999","123","007","042"], nomatch: ["1","12","1000","99","1234","12345"] },
+  { title: "10. Email addresses (simple)", match: ["a@b.com","user@example.org","x@y.co"], nomatch: ["notanemail","@missing.com","noatsign.com","user@","@.com","user @x.com"] }
 ];
 
 const state = {
@@ -133,38 +92,40 @@ function testRegex(pattern, match, nomatch) {
   return { valid: allGood, matchResults, nomatchResults, msg, msgClass };
 }
 
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Full render - only called when switching challenges
 function render() {
   const c = challenges[state.current];
   const input = state.inputs[state.current];
   const result = testRegex(input, c.match, c.nomatch);
-  const solved = state.solved;
-  const solvedCount = solved.filter(Boolean).length;
+  const solvedCount = state.solved.filter(Boolean).length;
 
-  let html = `<div class="progress">Challenge ${state.current + 1} of ${challenges.length} &nbsp;|&nbsp; Solved: ${solvedCount}/${challenges.length}</div>`;
+  let html = '';
   html += `<div class="card">`;
-  html += `<div class="challenge-title">${c.title} ${state.solved[state.current] ? '<span class="solved-badge">✓ SOLVED (' + state.bestLengths[state.current] + ' chars)</span>' : ''}</div>`;
+  html += `<div class="challenge-title" id="challenge-title">${c.title} ${state.solved[state.current] ? '<span class="solved-badge">✓ SOLVED (' + state.bestLengths[state.current] + ' chars)</span>' : ''}</div>`;
   html += `<div class="lists">`;
 
   html += `<div class="list-box match"><div class="list-label">✓ MUST MATCH</div>`;
   c.match.forEach((s, i) => {
     const cls = result.matchResults[i] === null ? 'neutral' : result.matchResults[i] ? 'ok' : 'fail';
-    html += `<div class="string-item ${cls}">${escHtml(s)}</div>`;
+    html += `<div class="string-item ${cls}" id="m${i}">${escHtml(s)}</div>`;
   });
   html += `</div>`;
 
   html += `<div class="list-box no-match"><div class="list-label">✗ MUST NOT MATCH</div>`;
   c.nomatch.forEach((s, i) => {
     const cls = result.nomatchResults[i] === null ? 'neutral' : result.nomatchResults[i] ? 'ok' : 'fail';
-    html += `<div class="string-item ${cls}">${escHtml(s)}</div>`;
+    html += `<div class="string-item ${cls}" id="n${i}">${escHtml(s)}</div>`;
   });
   html += `</div></div>`;
 
   const inputClass = !input ? '' : result.valid ? 'valid' : 'invalid';
   html += `<div class="input-row">
-    <input type="text" id="regex-input" value="${escAttr(input)}" placeholder="Enter your regex…" class="${inputClass}" autocomplete="off" spellcheck="false">
-    <div class="length-badge">Length: <span>${input.length}</span></div>
+    <input type="text" id="regex-input" value="${input.replace(/"/g,'&quot;')}" placeholder="Enter your regex…" class="${inputClass}" autocomplete="off" spellcheck="false">
+    <div class="length-badge" id="length-badge">Length: <span>${input.length}</span></div>
   </div>`;
-  html += `<div class="status-msg ${result.msgClass}">${result.msg}</div>`;
+  html += `<div class="status-msg ${result.msgClass}" id="status-msg">${result.msg}</div>`;
   html += `</div>`;
 
   html += `<div class="nav">
@@ -172,42 +133,86 @@ function render() {
     <button id="btn-next" ${state.current === challenges.length - 1 ? 'disabled' : ''}>Next →</button>
   </div>`;
 
-  if (solvedCount === challenges.length) {
-    const total = state.bestLengths.reduce((a,b) => a + (b||0), 0);
-    html += `<div class="scoreboard" style="margin-top:24px">
-      <h2>🏆 All Challenges Complete!</h2>`;
-    challenges.forEach((ch, i) => {
-      html += `<div class="score-row"><span>${ch.title}</span><span>${state.bestLengths[i]} chars</span></div>`;
-    });
-    html += `<div class="score-total">Total score: ${total} characters</div></div>`;
-  }
-
+  document.getElementById('progress').textContent = `Challenge ${state.current + 1} of ${challenges.length} | Solved: ${solvedCount}/${challenges.length}`;
   document.getElementById('app').innerHTML = html;
 
-  const inp = document.getElementById('regex-input');
-  inp.focus();
-  inp.setSelectionRange(inp.value.length, inp.value.length);
-  inp.addEventListener('input', e => {
-    state.inputs[state.current] = e.target.value;
-    const r = testRegex(e.target.value, c.match, c.nomatch);
-    if (r.valid) {
-      const len = e.target.value.length;
-      if (!state.solved[state.current] || len < state.bestLengths[state.current]) {
-        state.solved[state.current] = true;
-        state.bestLengths[state.current] = len;
-      }
-    }
-    render();
-  });
+  updateScoreboard();
+
+  document.getElementById('regex-input').addEventListener('input', onInput);
   document.getElementById('btn-prev').addEventListener('click', () => { state.current--; render(); });
   document.getElementById('btn-next').addEventListener('click', () => { state.current++; render(); });
 }
 
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+// Partial update - only updates dynamic parts, leaves input untouched
+function updateDynamic(result) {
+  const c = challenges[state.current];
+  const input = state.inputs[state.current];
+
+  // Update string item classes
+  c.match.forEach((_, i) => {
+    const el = document.getElementById('m' + i);
+    if (el) el.className = 'string-item ' + (result.matchResults[i] === null ? 'neutral' : result.matchResults[i] ? 'ok' : 'fail');
+  });
+  c.nomatch.forEach((_, i) => {
+    const el = document.getElementById('n' + i);
+    if (el) el.className = 'string-item ' + (result.nomatchResults[i] === null ? 'neutral' : result.nomatchResults[i] ? 'ok' : 'fail');
+  });
+
+  // Update input border class without touching the input itself
+  const inp = document.getElementById('regex-input');
+  inp.className = !input ? '' : result.valid ? 'valid' : 'invalid';
+
+  // Update length badge
+  document.getElementById('length-badge').innerHTML = `Length: <span>${input.length}</span>`;
+
+  // Update status
+  const statusEl = document.getElementById('status-msg');
+  statusEl.textContent = result.msg;
+  statusEl.className = 'status-msg ' + result.msgClass;
+
+  // Update title (solved badge may change)
+  document.getElementById('challenge-title').innerHTML = `${c.title} ${state.solved[state.current] ? '<span class="solved-badge">✓ SOLVED (' + state.bestLengths[state.current] + ' chars)</span>' : ''}`;
+
+  // Update progress
+  const solvedCount = state.solved.filter(Boolean).length;
+  document.getElementById('progress').textContent = `Challenge ${state.current + 1} of ${challenges.length} | Solved: ${solvedCount}/${challenges.length}`;
+
+  updateScoreboard();
+}
+
+function updateScoreboard() {
+  const solvedCount = state.solved.filter(Boolean).length;
+  let sb = document.getElementById('scoreboard');
+  if (solvedCount < challenges.length) {
+    if (sb) sb.remove();
+    return;
+  }
+  const total = state.bestLengths.reduce((a, b) => a + (b || 0), 0);
+  let html = `<div class="scoreboard" id="scoreboard" style="margin-top:24px"><h2>🏆 All Challenges Complete!</h2>`;
+  challenges.forEach((ch, i) => {
+    html += `<div class="score-row"><span>${ch.title}</span><span>${state.bestLengths[i]} chars</span></div>`;
+  });
+  html += `<div class="score-total">Total score: ${total} characters</div></div>`;
+  if (sb) sb.outerHTML = html;
+  else document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function onInput(e) {
+  const pattern = e.target.value;
+  state.inputs[state.current] = pattern;
+  const c = challenges[state.current];
+  const result = testRegex(pattern, c.match, c.nomatch);
+  if (result.valid) {
+    const len = pattern.length;
+    if (!state.solved[state.current] || len < state.bestLengths[state.current]) {
+      state.solved[state.current] = true;
+      state.bestLengths[state.current] = len;
+    }
+  }
+  updateDynamic(result);
+}
 
 render();
 </script>
-
 </body>
 </html>
